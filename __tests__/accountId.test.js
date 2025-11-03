@@ -7,22 +7,32 @@ import {
 
 const ACCOUNT_ID_18 = "0018c00002NIZJIAA5";
 const ACCOUNT_ID_15 = ACCOUNT_ID_18.slice(0, 15);
+const USER_ID_18 = "005fj000007W4pFAAS";
+const USER_ID_15 = USER_ID_18.slice(0, 15);
 
 describe("extractAccountIdFromUrl", () => {
-  it("pulls the ID from a standard Lightning record URL", () => {
-    const result = extractAccountIdFromUrl(
+  it("pulls IDs from standard Lightning record URLs", () => {
+    const accountResult = extractAccountIdFromUrl(
       `https://sbpusa.lightning.force.com/lightning/r/Account/${ACCOUNT_ID_18}/view`
     );
+    const userResult = extractAccountIdFromUrl(
+      `https://wise-impala-tvvfom-dev-ed.trailblaze.lightning.force.com/lightning/r/User/${USER_ID_18}/view`
+    );
 
-    expect(result).toBe(ACCOUNT_ID_18);
+    expect(accountResult).toBe(ACCOUNT_ID_18);
+    expect(userResult).toBe(USER_ID_18);
   });
 
   it("handles URLs that omit the Account segment", () => {
-    const result = extractAccountIdFromUrl(
+    const accountResult = extractAccountIdFromUrl(
       `https://sbpusa.lightning.force.com/lightning/r/${ACCOUNT_ID_18}/related`
     );
+    const userResult = extractAccountIdFromUrl(
+      `https://wise-impala-tvvfom-dev-ed.trailblaze.lightning.force.com/lightning/r/${USER_ID_18}/view`
+    );
 
-    expect(result).toBe(ACCOUNT_ID_18);
+    expect(accountResult).toBe(ACCOUNT_ID_18);
+    expect(userResult).toBe(USER_ID_18);
   });
 
   it("finds IDs in hashes and query parameters", () => {
@@ -57,10 +67,12 @@ describe("extractAccountIdFromUrl", () => {
 describe("extractAccountIdFromString", () => {
   it("returns 18-character IDs", () => {
     expect(extractAccountIdFromString(`prefix-${ACCOUNT_ID_18}`)).toBe(ACCOUNT_ID_18);
+    expect(extractAccountIdFromString(`prefix-${USER_ID_18}`)).toBe(USER_ID_18);
   });
 
   it("returns 15-character IDs", () => {
     expect(extractAccountIdFromString(`prefix-${ACCOUNT_ID_15}`)).toBe(ACCOUNT_ID_15);
+    expect(extractAccountIdFromString(`prefix-${USER_ID_15}`)).toBe(USER_ID_15);
   });
 
   it("ignores strings without IDs", () => {

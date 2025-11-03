@@ -1,7 +1,7 @@
 {
   "name": "sfaccountidcrome",
   "version": "1.0.0",
-  "description": "Salesforce Account ID Copier extension tooling",
+  "description": "Salesforce Record ID Copier extension tooling",
   "type": "module",
   "scripts": {
     "test": "vitest run"

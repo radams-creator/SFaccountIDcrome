@@ -1,5 +1,13 @@
-export const ACCOUNT_ID_PATH_REGEX = /\/(?:lightning\/r\/)?(?:Account\/)?(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)(?:[/?#]|$)/;
-export const ACCOUNT_ID_VALUE_REGEX = /(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)/;
+const SALESFORCE_ID_PREFIX = "(?:0|[1-9A-Za-z])[0-9A-Za-z]{2}";
+const SALESFORCE_ID_BODY = "[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?";
+const SALESFORCE_ID_PATTERN = `${SALESFORCE_ID_PREFIX}${SALESFORCE_ID_BODY}`;
+
+export const ACCOUNT_ID_PATH_REGEX = new RegExp(
+  `\\/(?:lightning\\/r\\/)?(?:[A-Za-z0-9_]+\\/)?(${SALESFORCE_ID_PATTERN})(?:[\\/?#]|$)`
+);
+export const ACCOUNT_ID_VALUE_REGEX = new RegExp(
+  `(?<![0-9A-Za-z])(${SALESFORCE_ID_PATTERN})(?![0-9A-Za-z])`
+);
 
 export function extractAccountIdFromString(candidate) {
   if (!candidate || typeof candidate !== "string") {
