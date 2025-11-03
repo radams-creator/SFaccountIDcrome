@@ -5,8 +5,8 @@ const CONTEXT_MENU_ID = "copy-salesforce-account-id";
 function createContextMenu() {
   chrome.contextMenus.create({
     id: CONTEXT_MENU_ID,
-    title: "Copy Salesforce Account ID",
-    contexts: ["link", "page"],
+    title: "Copy Salesforce Record ID",
+    contexts: ["link", "page", "selection"],
     documentUrlPatterns: ["https://*.lightning.force.com/*"]
   }, () => {
     if (chrome.runtime.lastError) {
@@ -108,21 +108,21 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   const accountId = candidates.map(findAccountId).find(Boolean);
 
   if (!accountId) {
-    showToast(tab.id, "No Salesforce Account ID found", true);
+    showToast(tab.id, "No Salesforce Record ID found", true);
     return;
   }
 
   copyTextToClipboard(tab.id, accountId)
     .then((result) => {
       if (result.success) {
-        showToast(tab.id, `Copied Account ID: ${accountId}`);
+        showToast(tab.id, `Copied Record ID: ${accountId}`);
       } else {
-        console.error("Failed to copy account ID:", result.message);
-        showToast(tab.id, "Unable to copy Account ID", true);
+        console.error("Failed to copy record ID:", result.message);
+        showToast(tab.id, "Unable to copy Record ID", true);
       }
     })
     .catch((error) => {
-      console.error("Unexpected error copying account ID", error);
-      showToast(tab.id, "Unable to copy Account ID", true);
+      console.error("Unexpected error copying record ID", error);
+      showToast(tab.id, "Unable to copy Record ID", true);
     });
 });
