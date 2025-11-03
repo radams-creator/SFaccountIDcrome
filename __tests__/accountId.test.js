@@ -37,29 +37,11 @@ describe("extractAccountIdFromUrl", () => {
     expect(queryResult).toBe(ACCOUNT_ID_18);
   });
 
-  it("finds IDs in record-focused search parameters", () => {
-    const cmpUrl =
-      `https://sbpusa.lightning.force.com/lightning/cmp/c__foo?c__recordId=${ACCOUNT_ID_18}`;
-    const shortParamUrl =
-      `https://sbpusa.lightning.force.com/lightning/cmp/c__bar?rId=${ACCOUNT_ID_18}`;
-
-    expect(extractAccountIdFromUrl(cmpUrl)).toBe(ACCOUNT_ID_18);
-    expect(extractAccountIdFromUrl(shortParamUrl)).toBe(ACCOUNT_ID_18);
-  });
-
   it("decodes encoded components before matching", () => {
     const encoded =
       "https://sbpusa.lightning.force.com/lightning/r/Account/%30%30%31%38%63%30%30%30%30%32%4e%49%5a%4a%49%41%41%35/view";
 
     expect(extractAccountIdFromUrl(encoded)).toBe(ACCOUNT_ID_18);
-  });
-
-  it("matches IDs case-insensitively", () => {
-    const lowerCaseAccountId = ACCOUNT_ID_18.toLowerCase();
-    const lowerCaseUrl =
-      `https://sbpusa.lightning.force.com/lightning/r/account/${lowerCaseAccountId}/view`;
-
-    expect(extractAccountIdFromUrl(lowerCaseUrl)).toBe(lowerCaseAccountId);
   });
 
   it("falls back to substring matching for partial URLs", () => {

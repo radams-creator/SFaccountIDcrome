@@ -1,5 +1,5 @@
-export const ACCOUNT_ID_PATH_REGEX = /\/(?:lightning\/r\/)?(?:Account\/)?(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)(?:[/?#]|$)/i;
-export const ACCOUNT_ID_VALUE_REGEX = /(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)/i;
+export const ACCOUNT_ID_PATH_REGEX = /\/(?:lightning\/r\/)?(?:Account\/)?(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)(?:[/?#]|$)/;
+export const ACCOUNT_ID_VALUE_REGEX = /(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)/;
 
 export function extractAccountIdFromString(candidate) {
   if (!candidate || typeof candidate !== "string") {
@@ -41,30 +41,11 @@ export function extractAccountIdFromUrl(urlString) {
       return hashMatch[1];
     }
 
-    if (url.searchParams) {
-      for (const [name, value] of url.searchParams.entries()) {
-        if (!value) {
-          continue;
-        }
-
-        const decodedValue = safeDecode(value);
-        const valueMatch = extractAccountIdFromString(decodedValue);
-        if (valueMatch) {
-          return valueMatch;
-        }
-
-        const lowerName = name.toLowerCase();
-        if (
-          lowerName.includes("record") ||
-          lowerName.includes("acct") ||
-          lowerName.endsWith("id") ||
-          lowerName.endsWith("_id")
-        ) {
-          const fallbackMatch = extractAccountIdFromString(`${name}:${decodedValue}`);
-          if (fallbackMatch) {
-            return fallbackMatch;
-          }
-        }
+    const searchParamsId = url.searchParams?.get("id");
+    if (searchParamsId) {
+      const idMatch = extractAccountIdFromString(searchParamsId);
+      if (idMatch) {
+        return idMatch;
       }
     }
 
