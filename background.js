@@ -1,6 +1,6 @@
 import { extractAccountIdFromString, extractAccountIdFromUrl } from "./accountId.js";
 
-const CONTEXT_MENU_ID = "copy-salesforce-record-id";
+const CONTEXT_MENU_ID = "copy-salesforce-account-id";
 
 function createContextMenu() {
   chrome.contextMenus.create({
@@ -104,7 +104,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     return;
   }
 
-  const candidates = [info.linkUrl, info.selectionText, info.pageUrl, tab.url];
+  const candidates = [info.linkUrl, info.pageUrl, info.selectionText, tab.url];
   const accountId = candidates.map(findAccountId).find(Boolean);
 
   if (!accountId) {
