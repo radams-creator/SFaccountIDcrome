@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Salesforce Account ID Copier",
+  "version": "1.0.0",
+  "description": "Copy the Salesforce Account ID from lightning record URLs via the right-click context menu.",
+  "permissions": ["contextMenus", "scripting", "clipboardWrite", "tabs"],
+  "host_permissions": [
+    "https://*.lightning.force.com/*",
+    "https://*.my.salesforce.com/*",
+    "https://*.salesforce.com/*",
+    "https://*.visual.force.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
