@@ -1,5 +1,6 @@
+import { extractAccountIdFromString, extractAccountIdFromUrl } from "./accountId.js";
+
 const CONTEXT_MENU_ID = "copy-salesforce-account-id";
-const ACCOUNT_ID_REGEX = /\/Account\/([0-9A-Za-z]{15,18})(?:\/|$)/;
 
 function createContextMenu() {
   chrome.contextMenus.create({
@@ -22,19 +23,17 @@ chrome.runtime.onStartup?.addListener(() => {
   chrome.contextMenus.removeAll(createContextMenu);
 });
 
-function extractAccountId(urlString) {
-  if (!urlString) {
+function findAccountId(candidate) {
+  if (!candidate) {
     return null;
   }
 
-  try {
-    const url = new URL(urlString);
-    const match = url.pathname.match(ACCOUNT_ID_REGEX);
-    return match ? match[1] : null;
-  } catch (error) {
-    console.debug("Unable to parse URL", urlString, error);
-    return null;
+  const fromUrl = extractAccountIdFromUrl(candidate);
+  if (fromUrl) {
+    return fromUrl;
   }
+
+  return extractAccountIdFromString(candidate);
 }
 
 async function copyTextToClipboard(tabId, text) {
@@ -105,8 +104,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     return;
   }
 
-  const candidateUrl = info.linkUrl || info.pageUrl || tab.url;
-  const accountId = extractAccountId(candidateUrl);
+  const candidates = [info.linkUrl, info.pageUrl, info.selectionText, tab.url];
+  const accountId = candidates.map(findAccountId).find(Boolean);
 
   if (!accountId) {
     showToast(tab.id, "No Salesforce Account ID found", true);
