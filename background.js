@@ -1,6 +1,5 @@
 const CONTEXT_MENU_ID = "copy-salesforce-account-id";
-const ACCOUNT_ID_URL_REGEX = /\/Account\/(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)(?:[/?#]|$)/;
-const ACCOUNT_ID_VALUE_REGEX = /(001[0-9A-Za-z]{12}(?:[0-9A-Za-z]{3})?)/;
+const ACCOUNT_ID_REGEX = /\/Account\/([0-9A-Za-z]{15,18})(?:\/|$)/;
 
 function createContextMenu() {
   chrome.contextMenus.create({
@@ -23,27 +22,18 @@ chrome.runtime.onStartup?.addListener(() => {
   chrome.contextMenus.removeAll(createContextMenu);
 });
 
-function extractAccountIdFromString(candidate) {
-  if (!candidate || typeof candidate !== "string") {
-    return null;
-  }
-
-  const match = candidate.match(ACCOUNT_ID_VALUE_REGEX);
-  return match ? match[1] : null;
-}
-
-function extractAccountIdFromUrl(urlString) {
+function extractAccountId(urlString) {
   if (!urlString) {
     return null;
   }
 
   try {
     const url = new URL(urlString);
-    const match = url.pathname.match(ACCOUNT_ID_URL_REGEX);
+    const match = url.pathname.match(ACCOUNT_ID_REGEX);
     return match ? match[1] : null;
   } catch (error) {
     console.debug("Unable to parse URL", urlString, error);
-    return extractAccountIdFromString(urlString);
+    return null;
   }
 }
 
@@ -110,166 +100,30 @@ function showToast(tabId, message, isError = false) {
   }, () => chrome.runtime.lastError && console.error(chrome.runtime.lastError));
 }
 
-async function resolveAccountIdFromElement(tabId, targetElementId, frameId) {
-  if (!tabId || !targetElementId) {
-    return null;
-  }
-
-  try {
-    const target = { tabId, elementIds: [targetElementId] };
-    if (typeof frameId === "number") {
-      target.frameIds = [frameId];
-    }
-
-    const [result] = await chrome.scripting.executeScript({
-      target,
-      func: (element, regexSource) => {
-        const pattern = new RegExp(regexSource, "");
-
-        const checkNode = (node, depth = 0) => {
-          if (!node || depth > 5) {
-            return null;
-          }
-
-          const datasetValues = node.dataset ? Object.values(node.dataset) : [];
-          const attributeNames = [
-            "href",
-            "data-recordid",
-            "data-record-id",
-            "data-recordId",
-            "data-id",
-            "data-target-selection-name",
-            "aria-label",
-            "title"
-          ];
-
-          for (const value of datasetValues) {
-            if (typeof value === "string") {
-              const match = value.match(pattern);
-              if (match) {
-                return match[0];
-              }
-            }
-          }
-
-          for (const attr of attributeNames) {
-            const value = typeof node.getAttribute === "function" ? node.getAttribute(attr) : null;
-            if (value) {
-              const match = value.match(pattern);
-              if (match) {
-                return match[0];
-              }
-            }
-          }
-
-          const textMatch = node.textContent ? node.textContent.match(pattern) : null;
-          if (textMatch) {
-            return textMatch[0];
-          }
-
-          return checkNode(node.parentElement, depth + 1);
-        };
-
-        return checkNode(element);
-      },
-      args: [ACCOUNT_ID_VALUE_REGEX.source]
-    });
-
-    return result?.result ?? null;
-  } catch (error) {
-    console.debug("Failed to resolve Account ID from element", error);
-    return null;
-  }
-}
-
-async function resolveAccountIdFromPage(tabId, frameId) {
-  if (!tabId) {
-    return null;
-  }
-
-  try {
-    const target = { tabId };
-    if (typeof frameId === "number") {
-      target.frameIds = [frameId];
-    }
-
-    const [result] = await chrome.scripting.executeScript({
-      target,
-      func: (regexSource) => {
-        const pattern = new RegExp(regexSource, "");
-        const href = window.location?.href;
-        if (typeof href === "string") {
-          const match = href.match(pattern);
-          if (match) {
-            return match[0];
-          }
-        }
-
-        const meta = document.querySelector('meta[name="sfdc-recordid"], meta[name="recordId"]');
-        const metaContent = meta?.getAttribute("content");
-        if (metaContent) {
-          const match = metaContent.match(pattern);
-          if (match) {
-            return match[0];
-          }
-        }
-
-        return null;
-      },
-      args: [ACCOUNT_ID_VALUE_REGEX.source]
-    });
-
-    return result?.result ?? null;
-  } catch (error) {
-    console.debug("Failed to resolve Account ID from page", error);
-    return null;
-  }
-}
-
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== CONTEXT_MENU_ID || !tab?.id) {
     return;
   }
 
-  const tabId = tab.id;
-  const sources = [info.linkUrl, info.pageUrl, tab.url];
-  let accountId = null;
-
-  for (const source of sources) {
-    accountId = extractAccountIdFromUrl(source) || extractAccountIdFromString(source);
-    if (accountId) {
-      break;
-    }
-  }
-
-  if (!accountId && info.selectionText) {
-    accountId = extractAccountIdFromString(info.selectionText);
-  }
-
-  if (!accountId && info.targetElementId) {
-    accountId = await resolveAccountIdFromElement(tabId, info.targetElementId, info.frameId);
-  }
+  const candidateUrl = info.linkUrl || info.pageUrl || tab.url;
+  const accountId = extractAccountId(candidateUrl);
 
   if (!accountId) {
-    accountId = await resolveAccountIdFromPage(tabId, info.frameId);
-  }
-
-  if (!accountId) {
-    showToast(tabId, "No Salesforce Account ID found", true);
+    showToast(tab.id, "No Salesforce Account ID found", true);
     return;
   }
 
-  copyTextToClipboard(tabId, accountId)
+  copyTextToClipboard(tab.id, accountId)
     .then((result) => {
       if (result.success) {
-        showToast(tabId, `Copied Account ID: ${accountId}`);
+        showToast(tab.id, `Copied Account ID: ${accountId}`);
       } else {
         console.error("Failed to copy account ID:", result.message);
-        showToast(tabId, "Unable to copy Account ID", true);
+        showToast(tab.id, "Unable to copy Account ID", true);
       }
     })
     .catch((error) => {
       console.error("Unexpected error copying account ID", error);
-      showToast(tabId, "Unable to copy Account ID", true);
+      showToast(tab.id, "Unable to copy Account ID", true);
     });
 });
